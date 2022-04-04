@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using NJBudgetBackEnd.Models;
 using NJBudgetWBackend.Services.Interface;
 using NJBudgetWBackend.Services.Interface.Interface;
@@ -13,8 +15,10 @@ namespace NJBudgetWBackend.Controllers
     [ApiController]
     public class OperationController : ControllerBase
     {
-        private IOperationService _opeService = null;
-        private IGroupService _groupService = null;
+        private readonly IOperationService _opeService;
+        private readonly IGroupService _groupService;
+        private readonly ILogger _logger;
+
 
         private OperationController()
         {
@@ -22,75 +26,121 @@ namespace NJBudgetWBackend.Controllers
         }
         public OperationController(
             IOperationService service,
-            IGroupService groupService)
+            IGroupService groupService,
+            ILogger<OperationController> logger)
         {
             _opeService = service;
             _groupService = groupService;
+            _logger = logger;
         }
-        // POST api/<OperationController>
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         [HttpPost("add-operation")]
-        public async Task<Compte> Add([FromBody] Operation value)
-        {
-            if(value == null )
-            {
-                return null;
-            }
-            using var opTask = _opeService.AddAsync(value);
-            await opTask;
-            if(opTask.IsCompletedSuccessfully)
-            {
-                DateTime now = DateTime.Now;
-                using var compteTask = _groupService.GetCompteAsync(value.CompteId, (byte)now.Month, (ushort)now.Year);
-                await compteTask;
-                return compteTask.Result;
-            }
-            else
-            {
-                throw new Exception("Moi toutes ces histoires de merde, ça me fout la tête comme une callebasse !");
-            }
-        }
-
-        // POST api/<OperationController>
-        [HttpPost("remove-operation")]
-
-        public async Task<Compte> Remove([FromBody] Operation value)
+        public async Task<ActionResult<Compte>> AddAsync([FromBody] Operation value)
         {
             if (value == null)
             {
-                return null;
+                return BadRequest();
             }
-            using var opTask = _opeService.RemoveAsync(value);
-            await opTask;
-            if (opTask.IsCompletedSuccessfully)
+            try
             {
-                DateTime now = DateTime.Now;
-                using var compteTask = _groupService.GetCompteAsync(value.CompteId, (byte)now.Month, (ushort)now.Year);
-                await compteTask;
-                return compteTask.Result;
+                using var opTask = _opeService.AddAsync(value);
+                await opTask;
+                if (opTask.IsCompletedSuccessfully)
+                {
+                    DateTime now = DateTime.Now;
+                    using var compteTask = _groupService.GetCompteAsync(value.CompteId, (byte)now.Month, (ushort)now.Year);
+                    await compteTask;
+                    return Ok(compteTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                throw new Exception("Tu connais quelqu'un qui tire plus vite ? ... non Personne :-)");
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex.InnerException?.Message);
+                return BadRequest(ex.Message);
+            }
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        [HttpPost("remove-operation")]
+        public async Task<ActionResult<Compte>> RemoveAsync([FromBody] Operation value)
+        {
+            if (value == null)
+            {
+                return BadRequest();
+            }
+            try
+            {
+                using var opTask = _opeService.RemoveAsync(value);
+                await opTask;
+                if (opTask.IsCompletedSuccessfully)
+                {
+                    DateTime now = DateTime.Now;
+                    using var compteTask = _groupService.GetCompteAsync(value.CompteId, (byte)now.Month, (ushort)now.Year);
+                    await compteTask;
+                    return Ok(compteTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex.InnerException?.Message);
+                return BadRequest(ex.Message);
             }
         }
 
-        // DELETE api/<OperationController>/5
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="idOperation"></param>
+        /// <returns></returns>
         [HttpDelete("{idOperation}")]
-        public async Task<Compte> Delete(Guid idOperation)
+        public async Task<ActionResult> DeleteAsync(Guid idOperation)
         {
             if (idOperation == Guid.Empty)
             {
-                return null;
+                return BadRequest();
             }
-            using var opTask = _opeService.DeleteAsync(idOperation);
-            await opTask;
-            if (opTask.IsCompletedSuccessfully)
+            try
             {
-                throw new NotImplementedException();
+
+                using var opTask = _opeService.DeleteAsync(idOperation);
+                await opTask;
+                if (opTask.IsCompletedSuccessfully)
+                {
+                    return Ok();
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                throw new Exception("Les années ne font pas des sages, elles ne font que des viellards");
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex.InnerException?.Message);
+                return BadRequest(ex.Message);
             }
         }
     }

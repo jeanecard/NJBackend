@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using NJBudgetWBackend.Models;
 using NJBudgetWBackend.Services.Interface.Interface;
 using System;
@@ -12,91 +14,111 @@ namespace NJBudgetWBackend.Controllers
     [ApiController]
     public class SyntheseController : ControllerBase
     {
-        private ISyntheseService _synthService = null;
+        private readonly ISyntheseService _synthService;
+        private readonly ILogger _logger;
+
         private SyntheseController()
         {
             //Dummy for DI.
         }
 
-        public SyntheseController(ISyntheseService service)
+        public SyntheseController(ISyntheseService service, ILogger<SyntheseController> logger)
         {
             _synthService = service;
+            _logger = logger;
         }
-        //getExpenseGroupByAppartenance
-        // GET: api/<SyntheseController>
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ByAppartenance")]
-        public async Task<SyntheseDepenseGlobalModel> GetByAppartenanceAsync()
+        public async Task<ActionResult<SyntheseDepenseGlobalModel>> GetByAppartenanceAsync()
         {
-           
-            using var getTask = _synthService.GetSyntheseByAppartenanceAsync((byte)DateTime.Now.Month);
-            await getTask;
-            if (getTask.IsCompletedSuccessfully)
+            try
             {
-                return getTask.Result;
+                using var getTask = _synthService.GetSyntheseByAppartenanceAsync((byte)DateTime.Now.Month);
+                await getTask;
+                if (getTask.IsCompletedSuccessfully)
+                {
+                    return Ok(getTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                throw new Exception("C'est pas faux");
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex.InnerException?.Message);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
 
-        //getExpenseGroupByAppartenance
-        // GET: api/<SyntheseController>
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="appartenanceId"></param>
+        /// <returns></returns>
         [HttpGet("ForAppartenance/{appartenanceId}")]
-        public async Task<SyntheseDepenseByAppartenanceModel> GetByGroupAsync(Guid appartenanceId)
+        public async Task<ActionResult<SyntheseDepenseByAppartenanceModel>> GetByGroupAsync(Guid appartenanceId)
         {
-            using Task<SyntheseDepenseByAppartenanceModel> getTask = _synthService.GetSyntheseForAppartenanceAsync(appartenanceId, (byte)DateTime.Now.Month);
-            await getTask;
-            if (getTask.IsCompletedSuccessfully)
+            if (appartenanceId == Guid.Empty)
             {
-                return getTask.Result;
+                return BadRequest();
             }
-            else
+            try
             {
-                throw new Exception("Vous m'avez pris pour un enseignant !!");
+                using Task<SyntheseDepenseByAppartenanceModel> getTask = _synthService.GetSyntheseForAppartenanceAsync(appartenanceId, (byte)DateTime.Now.Month);
+                await getTask;
+                if (getTask.IsCompletedSuccessfully)
+                {
+                    return Ok(getTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex.InnerException?.Message);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         [HttpGet("SyntheseMois")]
-        public async Task<SyntheseMoisModel> GetGlobalAsync()
+        public async Task<ActionResult<SyntheseMoisModel>> GetGlobalAsync()
         {
-            using Task<SyntheseMoisModel> getTask = _synthService.GetSyntheseGlobal((byte)DateTime.Now.Month);
-            await getTask;
-            if (getTask.IsCompletedSuccessfully)
+            try
             {
-                return getTask.Result;
+                using Task<SyntheseMoisModel> getTask = _synthService.GetSyntheseGlobal((byte)DateTime.Now.Month);
+                await getTask;
+                if (getTask.IsCompletedSuccessfully)
+                {
+                    return Ok(getTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                throw new Exception("Le gras c'est la vie.");
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex.InnerException?.Message);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
-        }
-
-
-
-        // GET api/<SyntheseController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<SyntheseController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<SyntheseController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<SyntheseController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
         }
     }
 }
