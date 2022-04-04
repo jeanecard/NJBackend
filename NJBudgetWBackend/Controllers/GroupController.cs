@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using NJBudgetBackEnd.Models;
 using NJBudgetWBackend.Services.Interface;
 using System;
@@ -15,15 +17,17 @@ namespace NJBudgetWBackend.Controllers
     public class GroupController : ControllerBase
     {
         private IGroupService _groupService = null;
+        private readonly ILogger _logger;
 
         private GroupController()
         {
             //Dummy for DI.
         }
 
-        public GroupController(IGroupService gService)
+        public GroupController(IGroupService gService, ILogger<GroupController> logger)
         {
             _groupService = gService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -32,18 +36,34 @@ namespace NJBudgetWBackend.Controllers
         /// <param name="idAppartenance"></param>
         /// <returns></returns>
         // GET api/<GroupController>/5
+
+        
         [HttpGet("ByIdAppartenance/{idAppartenance}")]
-        public async Task<IEnumerable<Group>> GetGroupsAsync(Guid idAppartenance)
+        public async Task<ActionResult<IEnumerable<Group>>> GetGroupsAsync(Guid idAppartenance)
         {
-            using var getTask = _groupService.GetGroupsAsync(idAppartenance);
-            await getTask;
-            if (getTask.IsCompletedSuccessfully)
+            if(idAppartenance == Guid.Empty)
             {
-                return getTask.Result;
+                return BadRequest("Guid can not be empty.");
             }
-            else
+            try
             {
-                throw new Exception("J'aime les gateaux");
+                using var getTask = _groupService.GetGroupsAsync(idAppartenance);
+                await getTask;
+                if (getTask.IsCompletedSuccessfully)
+                {
+                    return Ok(getTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+
             }
         }
 
@@ -55,24 +75,32 @@ namespace NJBudgetWBackend.Controllers
         /// <returns></returns>
         // GET api/<GroupController>/5
         [HttpGet("ById/{idGroup}")]
-        public async Task<Compte> GetCurrentCompteAsync(Guid idGroup)
+        public async Task<ActionResult<Compte>> GetCurrentCompteAsync(Guid idGroup)
         {
             if(idGroup == Guid.Empty)
             {
                 return null;
             }
-            
-
-
-            using var getTask = _groupService.GetCompteAsync(idGroup, (byte) DateTime.Now.Month, (ushort) DateTime.Now.Year);
-            await getTask;
-            if (getTask.IsCompletedSuccessfully)
+            try
             {
-                return getTask.Result;
+                var now = DateTime.Now;
+                using var getTask = _groupService.GetCompteAsync(idGroup, (byte)now.Month, (ushort)now.Year);
+                await getTask;
+                if (getTask.IsCompletedSuccessfully)
+                {
+                    return Ok(getTask.Result);
+                }
+                else
+                {
+                    _logger.LogError("Could not procees task");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
             }
-            else
+            catch(Exception ex)
             {
-                throw new Exception("Bennie, bennie, bennie !!!!!!");
+                _logger.LogDebug("Bennie, bennie, bennie !!!!!!");
+                _logger.LogError(ex.Message);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
     }

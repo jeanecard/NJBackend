@@ -31,7 +31,7 @@ namespace NJBudgetWBackend.Controllers
         [HttpGet]
         public async Task<IEnumerable<Appartenance>> GetAsync()
         {
-            await Task.Delay(1);
+            await Task.FromResult(1);
             var appartenances = _apService.Get();
             return appartenances;
         }
