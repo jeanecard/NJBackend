@@ -24,12 +24,11 @@ namespace NJBudgetWBackEndTests
             ops.Add(ope1);
             ops.Add(ope2);
 
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == 90);
-            Assert.True(budgetProvisonne == 10);
-            Assert.True(budgetConsomme == 10);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == 90);
+            Assert.True(budgetData.budgetProvisonne == 10);
+            Assert.True(budgetData.budgetConsomme == 10);
         }
 
         [Fact]
@@ -41,16 +40,15 @@ namespace NJBudgetWBackEndTests
 
             ops.Add(ope1);
             ops.Add(ope2);
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == 90);
-            Assert.True(budgetProvisonne == 0);
-            Assert.True(budgetConsomme == 10);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == 90);
+            Assert.True(budgetData.budgetProvisonne == 0);
+            Assert.True(budgetData.budgetConsomme == 10);
         }
 
         [Fact]
-        public void ProcessBudgetSpentAndLeft_With_Remove_Operation_But_One_Ou_Of_Range_Month_Expect_Left_Spent_Epargne_Updated()
+        public void ProcessBudgetSpentAndLeft_With_Remove_Operation_But_One_Out_Of_Range_Month_Expect_Left_Spent_Epargne_Updated()
         {
             List<Operation> ops = new List<Operation>();
             Operation ope1 = new Operation() { Value = -5, DateOperation = new DateTime(2021, 1, 1) };
@@ -58,12 +56,11 @@ namespace NJBudgetWBackEndTests
 
             ops.Add(ope1);
             ops.Add(ope2);
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == 95);
-            Assert.True(budgetProvisonne == 0);
-            Assert.True(budgetConsomme == 5);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == 95);
+            Assert.True(budgetData.budgetProvisonne == 0);
+            Assert.True(budgetData.budgetConsomme == 5);
         }
 
 
@@ -78,12 +75,11 @@ namespace NJBudgetWBackEndTests
             ops.Add(ope1);
             ops.Add(ope2);
             ops.Add(ope3);
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == 60);
-            Assert.True(budgetProvisonne == 15);
-            Assert.True(budgetConsomme == 40);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == 60);
+            Assert.True(budgetData.budgetProvisonne == 15);
+            Assert.True(budgetData.budgetConsomme == 40);
         }
 
         [Fact]
@@ -95,19 +91,18 @@ namespace NJBudgetWBackEndTests
 
             ops.Add(ope1);
             ops.Add(ope2);
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == -120);
-            Assert.True(budgetProvisonne == 100);
-            Assert.True(budgetConsomme == 220);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == -120);
+            Assert.True(budgetData.budgetProvisonne == 100);
+            Assert.True(budgetData.budgetConsomme == 220);
 
             //Suppression de l'épargne
             ops.RemoveAt(0);
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == -20);
-            Assert.True(budgetProvisonne == 0);
-            Assert.True(budgetConsomme == 120);
+            budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == -20);
+            Assert.True(budgetData.budgetProvisonne == 0);
+            Assert.True(budgetData.budgetConsomme == 120);
         }
 
         [Fact]
@@ -119,12 +114,11 @@ namespace NJBudgetWBackEndTests
 
             ops.Add(ope1);
             ops.Add(ope2);
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == 0);
-            Assert.True(budgetProvisonne == 50);
-            Assert.True(budgetConsomme == 100);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == 0);
+            Assert.True(budgetData.budgetProvisonne == 50);
+            Assert.True(budgetData.budgetConsomme == 100);
         }
 
 
@@ -137,12 +131,11 @@ namespace NJBudgetWBackEndTests
 
             ops.Add(ope1);
             ops.Add(ope2);
-            float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
             float budgetExpected = 100;
-            bProcesor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, budgetExpected, ops, 1, 2021);
-            Assert.True(budgetRestant == -10);
-            Assert.True(budgetProvisonne == 50);
-            Assert.True(budgetConsomme == 110);
+            var budgetData = bProcesor.ProcessBudgetSpentAndLeft(budgetExpected, ops, 1, 2021);
+            Assert.True(budgetData.budgetRestant == -10);
+            Assert.True(budgetData.budgetProvisonne == 50);
+            Assert.True(budgetData.budgetConsomme == 110);
         }
 
 

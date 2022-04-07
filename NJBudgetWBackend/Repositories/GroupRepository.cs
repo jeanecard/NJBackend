@@ -1,7 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
-using NJBudgetBackEnd.Models;
-using NJBudgetWBackend.Commun;
 using NJBudgetWBackend.Models;
 using NJBudgetWBackend.Repositories.Interface;
 using Npgsql;

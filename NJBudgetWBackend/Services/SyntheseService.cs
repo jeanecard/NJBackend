@@ -54,7 +54,7 @@ namespace NJBudgetWBackend.Services
                 return null;
             }
             SyntheseDepenseGlobalModel retour = new SyntheseDepenseGlobalModel();
-            using var opeTask = _opeRepo.GetOperationsAsync(days.Value.Item1, days.Value.Item2);
+            using var opeTask = _opeRepo.GetOperationsAsync(days.Value.first, days.Value.last);
             await opeTask;
             if (opeTask.IsCompletedSuccessfully)
             {
@@ -105,12 +105,7 @@ namespace NJBudgetWBackend.Services
                         await operationTask;
                         if (operationTask.IsCompletedSuccessfully)
                         {
-
-                            float budgetDepense = 0, budgetProvisonne = 0, budgetRestant = 0;
-                            _budgetBusiness.ProcessBudgetSpentAndLeft(
-                                out budgetDepense,
-                                out budgetProvisonne,
-                                out budgetRestant,
+                            var budgetData = _budgetBusiness.ProcessBudgetSpentAndLeft(
                                 iter.BudgetExpected,
                                 operationTask.Result,
                                 month,
@@ -118,7 +113,7 @@ namespace NJBudgetWBackend.Services
                             var item = new SyntheseDepenseByAppartenanceModelItem()
                             {
                                 BudgetPourcentageDepense = 0,
-                                BudgetValueDepense = budgetDepense,
+                                BudgetValueDepense = budgetData.budgetConsomme,
                                 BudgetValuePrevu = iter.BudgetExpected,
                                 GroupCaption = iter.Caption,
                                 GroupId = iter.Id,

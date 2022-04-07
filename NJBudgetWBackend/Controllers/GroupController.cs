@@ -16,7 +16,7 @@ namespace NJBudgetWBackend.Controllers
     [ApiController]
     public class GroupController : ControllerBase
     {
-        private IGroupService _groupService = null;
+        private readonly IGroupService _groupService;
         private readonly ILogger _logger;
 
         private GroupController()

@@ -1,6 +1,7 @@
 ﻿using NJBudgetBackEnd.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NJBudgetWBackend.Business
 {
@@ -25,25 +26,12 @@ namespace NJBudgetWBackend.Business
             CompteStatusEnum retour = CompteStatusEnum.None;
             if (statuses != null)
             {
-                bool firstStep = true;
                 int result = 0;
                 int nbValuesToProcess = 0;
-                foreach (CompteStatusEnum iter in statuses)
+                foreach (CompteStatusEnum iter in statuses.Where(x => x != CompteStatusEnum.None && x != CompteStatusEnum.Shame))
                 {
-                    if (iter != CompteStatusEnum.None
-                        && iter != CompteStatusEnum.Shame)
-                    {
-                        nbValuesToProcess++;
-                        if (firstStep)
-                        {
-                            firstStep = false;
-                            result = values[iter];
-                        }
-                        else
-                        {
-                            result += values[iter];
-                        }
-                    }
+                    nbValuesToProcess++;
+                    result += values[iter];
                 }
                 if (nbValuesToProcess > 0)
                 {
@@ -64,6 +52,11 @@ namespace NJBudgetWBackend.Business
             }
             return retour;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
         public CompteStatusEnum ProcessGlobalByCategories(IEnumerable<SyntheseDepenseGlobalModelItem> items)
         {
             if (items == null)
@@ -77,11 +70,12 @@ namespace NJBudgetWBackend.Business
                 budgetInitial += iter.BudgetValuePrevu;
                 budgetConsomme += iter.BudgetValueDepense;
             }
-            if(budgetConsomme <= budgetInitial )
+            if (budgetConsomme <= budgetInitial)
             {
                 return CompteStatusEnum.Good;
-            } else if(budgetConsomme < budgetInitial + budgetConsomme * 0.1 )
-                {
+            }
+            else if (budgetConsomme < budgetInitial + budgetConsomme * 0.1)
+            {
                 return CompteStatusEnum.Warning;
             }
             else
@@ -104,6 +98,7 @@ namespace NJBudgetWBackend.Business
             }
             float epargne = 0;
             float depense = 0;
+            
             Dictionary<(int, int), int> monthOperations = new Dictionary<(int, int), int>();
             foreach (IOperation iter in operations)
             {

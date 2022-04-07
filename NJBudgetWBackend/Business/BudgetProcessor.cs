@@ -5,63 +5,66 @@ using NJBudgetWBackend.Repositories.Interface;
 using NJBudgetWBackend.Services.Interface.Interface;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
-//Au debut du oi son donne l'argent a tous les comptes (opération epargne) en cous du ois on fait les depenses.
+//Au debut du mois on donne l'argent a tous les comptes (opération epargne) en cours du mois on fait les depenses.
 namespace NJBudgetWBackend.Business
 {
     public class BudgetProcessor : IBudgetProcessor
     {
-        private IAppartenanceService _apService = null;
-        private IStatusProcessor _statusProcessor = null;
+        private readonly IAppartenanceService _apService = null;
+        private readonly IStatusProcessor _statusProcessor = null;
         private BudgetProcessor()
         {
         }
         public BudgetProcessor(
-            IAppartenanceService apService, 
+            IAppartenanceService apService,
             IStatusProcessor sProcessor)
         {
             _apService = apService;
             _statusProcessor = sProcessor;
         }
         /// <summary>
-        /// Calcul le budget consommé, épargné et restant sur le mois month de l'année year.
+        ///  Calcul le budget consommé, épargné et restant sur le mois month de l'année year.
         /// </summary>
-        /// <param name="compte"></param>
+        /// <param name="budgetExpected"></param>
         /// <param name="operations"></param>
         /// <param name="month"></param>
-        public void ProcessBudgetSpentAndLeft(
-            out float budgetConsomme,
-            out float budgetProvisonne,
-            out float budgetRestant,
-            in float budgetExpected,
-            IEnumerable<IOperation> operations, 
-            byte month, 
-            ushort year)
+        /// <param name="year"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public (float budgetConsomme, float budgetProvisonne, float budgetRestant)
+            ProcessBudgetSpentAndLeft(float budgetExpected, IEnumerable<IOperation> operations, byte month, ushort year)
         {
             if (month == 0 || month > 12 || budgetExpected < 0)
             {
                 throw new ArgumentException("Ah ah, ils vous ont refiler toutes leurs merdes");
             }
-            budgetConsomme = 0;
-            budgetProvisonne = 0;
-            budgetRestant = budgetExpected;
+            (float budgetConsomme, float budgetProvisonne, float budgetRestant) retour = (0, 0, budgetExpected);
             if (operations != null)
             {
-                foreach (IOperation iter in operations)
+                foreach (IOperation iter in operations.Where(x => x.DateOperation.Month == month && x.DateOperation.Year == year))
                 {
-                    if (iter.DateOperation.Month == month && iter.DateOperation.Year == year)
+                    retour.budgetConsomme += Math.Abs(iter.Value);
+                    if (iter.Value > 0)
                     {
-                        budgetConsomme += Math.Abs(iter.Value);
-                        if (iter.Value > 0)
-                        {
-                            budgetProvisonne += iter.Value;
-                        }
+                        retour.budgetProvisonne += iter.Value;
                     }
                 }
-                budgetRestant = budgetExpected - budgetConsomme;
             }
+            retour.budgetRestant = budgetExpected - retour.budgetConsomme;
+
+            return retour;
         }
- 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="operations"></param>
+        /// <param name="groups"></param>
+        /// <param name="month"></param>
+        /// <param name="year"></param>
+        /// <returns></returns>
         public SyntheseDepenseGlobalModel ProcessSyntheseOperations(
             IEnumerable<SyntheseOperationRAwDB> operations,
             IEnumerable<GroupRawDB> groups,
@@ -91,7 +94,7 @@ namespace NJBudgetWBackend.Business
             }
             //2- Pour chaque appartenance, calcul du budget alloué et dépensé 
             // qui correspond a la somme de chacune de ces propriétés sur les comptes de l'appartenance.
-            foreach(Guid iterGuidAppartenance in operationsByCompteByAppartenance.Keys)
+            foreach (Guid iterGuidAppartenance in operationsByCompteByAppartenance.Keys)
             {
                 SyntheseDepenseGlobalModelItem syntheseAppartenance = new SyntheseDepenseGlobalModelItem();
                 syntheseAppartenance.AppartenanceId = iterGuidAppartenance;
@@ -101,23 +104,19 @@ namespace NJBudgetWBackend.Business
                 syntheseAppartenance.BudgetValueDepense = 0;
                 syntheseAppartenance.BudgetValuePrevu = 0;
                 List<CompteStatusEnum> statuses = new List<CompteStatusEnum>();
-                foreach(Guid groupIterGuid in operationsByCompteByAppartenance[iterGuidAppartenance].Keys)
+                foreach (Guid groupIterGuid in operationsByCompteByAppartenance[iterGuidAppartenance].Keys)
                 {
-                    float budgetDepense = 0, dummy1 = 0, dummy2 = 0;
-                    ProcessBudgetSpentAndLeft(
-                        out budgetDepense,
-                        out dummy1,
-                        out dummy2,
+                    var budgetData = ProcessBudgetSpentAndLeft(
                         operationAndBudgetMap[groupIterGuid].Item2,
                         operationsByCompteByAppartenance[iterGuidAppartenance][groupIterGuid],
                         month,
                         year);
-                    syntheseAppartenance.BudgetValueDepense += budgetDepense;
+                    syntheseAppartenance.BudgetValueDepense += budgetData.budgetConsomme;
                     syntheseAppartenance.BudgetValuePrevu += operationAndBudgetMap[groupIterGuid].Item2;
                     statuses.Add(_statusProcessor.ProcessState(
-                        operationAndBudgetMap[groupIterGuid].Item1, 
-                        operationAndBudgetMap[groupIterGuid].Item2, 
-                        operationsByCompteByAppartenance[iterGuidAppartenance][groupIterGuid])); 
+                        operationAndBudgetMap[groupIterGuid].Item1,
+                        operationAndBudgetMap[groupIterGuid].Item2,
+                        operationsByCompteByAppartenance[iterGuidAppartenance][groupIterGuid]));
                 }
                 syntheseAppartenance.BudgetPourcentageDepense = syntheseAppartenance.BudgetValuePrevu != 0.0f ? (syntheseAppartenance.BudgetValueDepense * 100.0f) / syntheseAppartenance.BudgetValuePrevu : 0.0f;
                 syntheseAppartenance.Status = _statusProcessor.ProcessGlobal(statuses);
@@ -169,9 +168,9 @@ namespace NJBudgetWBackend.Business
         private Dictionary<Guid, (OperationTypeEnum, float)> CreateOperationAndBudgetMap(IEnumerable<GroupRawDB> groups)
         {
             Dictionary<Guid, (OperationTypeEnum, float)> retour = new Dictionary<Guid, (OperationTypeEnum, float)>();
-            if(groups != null)
+            if (groups != null)
             {
-                foreach(GroupRawDB iter in groups)
+                foreach (GroupRawDB iter in groups)
                 {
                     if (!retour.ContainsKey(iter.Id))
                     {

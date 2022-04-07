@@ -107,11 +107,10 @@ namespace NJBudgetWBackend.Services
                 {
                     retour.Operations = operationsDuMoisTask.Result;
                     //4- Update budget left and spent for this month
-                    float budgetConsomme = 0, budgetProvisonne = 0, budgetRestant = 0;
-                    _budgetProcessor.ProcessBudgetSpentAndLeft(out budgetConsomme, out budgetProvisonne, out budgetRestant, groupRaw.BudgetExpected, retour.Operations, month, year);
-                    retour.BudgetConsummed = budgetConsomme;
-                    retour.BudgetLeft = budgetRestant;
-                    retour.BudgetProvision = budgetProvisonne;
+                    var budgetData = _budgetProcessor.ProcessBudgetSpentAndLeft(groupRaw.BudgetExpected, retour.Operations, month, year);
+                    retour.BudgetConsummed = budgetData.budgetConsomme;
+                    retour.BudgetLeft = budgetData.budgetRestant;
+                    retour.BudgetProvision = budgetData.budgetProvisonne;
                     //5- Update state of compte based on this month operations
                     using var operations6DerniersMoisTask = _opeRepo.GetOperationsAsync(idGroup, thisMonthStart.AddMonths(-6), thisMonthEnd);
                     await operations6DerniersMoisTask;
@@ -132,7 +131,7 @@ namespace NJBudgetWBackend.Services
             }
             else
             {
-                return null; ;
+                return null; 
             }
             return retour;
         }

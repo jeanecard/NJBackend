@@ -28,13 +28,3 @@ namespace NJBudgetBackEnd.Models
 
     }
 }
-
-//INSERT INTO public."OPERATION"(
-//    "Id", "CompteId", "DateOperation", "Value", "Caption")
-
-//    VALUES(
-//        '3841747d-8e40-4de8-acd4-4d2b49475c31',
-//        '3841747d-8e40-4de8-acd4-4d2b49475c30',
-//        '10/25/2021',
-//        50,
-//        'test');

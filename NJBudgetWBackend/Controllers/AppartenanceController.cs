@@ -27,7 +27,11 @@ namespace NJBudgetWBackend.Controllers
         {
             _apService = ser;
         }
-        // GET: api/<AppartenanceController>
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IEnumerable<Appartenance>> GetAsync()
         {
