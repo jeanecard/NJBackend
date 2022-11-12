@@ -28,6 +28,7 @@ namespace NJBudgetWBackend
         {
             services.AddCors(options =>
             {
+                //TODO limit CORS ASAP ;-)
                 options.AddDefaultPolicy(
                                   builder =>
                                   {
